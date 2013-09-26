@@ -1,0 +1,81 @@
+#!/bin/sh
+
+set -e
+
+[ -z "$SSH" ] && SSH=$(which ssh || true)
+[ -d ~/.sshdrop ] || mkdir ~/.sshdrop
+[ -r ~/.sshdrop/config ] || {
+  which brltty && SSHDROP_CLIPBOARD_OUTPUT_FILE=/var/lib/brltty/clipboard
+  cat - >~/.sshdrop/config <<EOF
+# sshdrop config
+###############################################################################
+#SSH="$SSH"
+
+# REQUIRED: [user@]hostname to connect to.
+#SSHDROP_REMOTE="netdrop@fqdn"
+
+# Optionally set an SSH identity file to authenticate with.
+#SSHDROP_IDENTITY="~/.sshdrop/id_ecdsc"
+
+# By default, drop files into HOME on the remote server.
+#SSHDROP_REMOTE_DIR=""
+
+# A unique identifier to avoid receiving payloads which originated from here.
+SSHDROP_SENDER=${USER}@$(hostname)
+
+# File to override once a new clipboard broadcast is received.
+#SSHDROP_CLIPBOARD_OUTPUT_FILE=${SSHDROP_CLIPBOARD_OUTPUT_FILE}
+
+# A directory of the most recent clipboard broadcasts per sender.
+#SSHDROP_CLIPBOARD_OUTPUT_DIR=""
+EOF
+}
+. ~/.sshdrop/config
+
+[ -x "$SSH" ] || {
+  echo "SSH not found."
+  exit 1
+}
+
+[ -z "$SSHDROP_REMOTE" ] && {
+  sensible-editor ~/.sshdrop/config
+  . ~/.sshdrop/config
+  [ -z "$SSHDROP_REMOTE" ] && {
+    echo "OK, giving up.  Edit ~/.sshdrop/config and provide a remote."
+    exit 2
+  }
+}
+
+[ -z "$SSHDROP_REMOTE_DIR" ] && SSHDROP_REMOTE_DIR='$HOME'
+
+# If arg was given, drop the file to others (use - for stdin)
+[ $# = 1 ] && {
+  $SSH -S ~/.sshdrop/ssh_socket -O check $SSHDROP_REMOTE 2>/dev/null || {
+    echo "Warning: Client not running, a password might be required."
+  }
+  file=$(cat $1 | $SSH -T -S ~/.sshdrop/ssh_socket $SSHDROP_REMOTE \
+         "f=\$(mktemp --tmpdir=$SSHDROP_REMOTE_DIR); echo \$f; cat - >\$f")
+  $SSH -n -T -S ~/.sshdrop/ssh_socket $SSHDROP_REMOTE \
+       "echo '$SSHDROP_SENDER clipboard $file' >>$SSHDROP_REMOTE_DIR/log"
+  echo "dropped."
+  exit 0
+}
+
+# The client/listener
+SSH_GET="$SSH -n -T -S ~/.sshdrop/ssh_socket $SSHDROP_REMOTE cat"
+
+$SSH ${SSHDROP_IDENTITY:+-i "${SSHDROP_IDENTITY}"} \
+     -n -T -M -S ~/.sshdrop/ssh_socket \
+     $SSHDROP_REMOTE \
+     "tail -n 0 -f $SSHDROP_REMOTE_DIR/log" | while read sender type data
+do [ "$sender" != "$SSHDROP_SENDER" ] && case "$type" in
+   clipboard)
+     echo "$sender sent:"
+     [ -n "$SSHDROP_CLIPBOARD_OUTPUT_DIR" -a \
+       -d "$SSHDROP_CLIPBOARD_OUTPUT_DIR" ] && {
+       named_output="${SSHDROP_CLIPBOARD_OUTPUT_DIR}/$sender"
+     }
+     $SSH_GET $data | tee $named_output $SSHDROP_CLIPBOARD_OUTPUT_FILE;;
+   *) echo "Unknown type '${type}'." >/dev/null 1>&2;;
+   esac
+done
