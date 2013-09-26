@@ -1,5 +1,5 @@
-netboard
-========
+netdrop
+=======
 
 A network-enabled, shared clipboard.
 
