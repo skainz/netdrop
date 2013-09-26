@@ -4,13 +4,16 @@ use strict;
 use Getopt::Std;
 use Net::MessageBus;
 use Data::Dumper;
+use MIME::Base64;
 use YAML::Tiny;
 
 my %opt;
 getopts ('bc:d:o:', \%opt);
 
 my $config = YAML::Tiny->read($opt{c} or $ENV{HOME}."/.config/netdrop") or die "No config.";
-my $sender=$config->[0]->{client}->{sender} or $ENV{USER}.'@'.$ENV{HOSTNAME};
+my $sender = $config->[0]->{client}->{sender};
+if (!$sender) { $sender = $ENV{USER}.'@'.`hostname`; }
+chomp($sender);
 
 $opt{o} or $opt{o} = $config->[0]->{client}->{"output-file"};
 my $MessageBus = Net::MessageBus->new(
@@ -38,7 +41,7 @@ while (my $message = $MessageBus->next_message()) {
     open(MYFILE, '>'.$opt{d}.'/'.$message->sender());
   }
 
-  print  MYFILE $message->payload()->{'message'};
+  print  MYFILE decode_base64($message->payload()->{'message'});
   close (MYFILE);
   }
 }

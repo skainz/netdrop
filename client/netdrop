@@ -3,10 +3,13 @@
 use strict;
 use Net::MessageBus;
 use Data::Dumper;
+use MIME::Base64;
 use YAML::Tiny;
 
 my $config = YAML::Tiny->read( $ENV{HOME}."/.config/netdrop" ) or die "No config.";
-my $sender=$config->[0]->{client}->{sender} or ($ENV{USER}.'-'.$ENV{HOSTNAME});
+my $sender = $config->[0]->{client}->{sender};
+if (!$sender) { $sender = $ENV{USER}.'@'.`hostname`; }
+chomp($sender);
 
 print $sender;
 my $MessageBus = Net::MessageBus->new(
@@ -22,4 +25,4 @@ my @data=<STDIN>;
 
 my $tosend=substr(join("",@data),0,4096);
 
-$MessageBus->send( type => 'alert', payload => { message => $tosend }  );
+$MessageBus->send( type => 'alert', payload => { message => encode_base64($tosend) }  );
