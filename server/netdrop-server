@@ -2,6 +2,7 @@
 
 use strict;
 
+use Getopt::Std;
 use Net::MessageBus::Server;
 use YAML::Tiny;
 
