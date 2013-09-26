@@ -28,21 +28,21 @@ my $MessageBus = Net::MessageBus->new(
 $MessageBus->subscribe_all;
 
 while (my $message = $MessageBus->next_message()) {
-  if ($message->sender() ne $sender)
-  {  
-  if ($opt{b}) { print "\007"; }
-  print $message->sender()." sent ".$message->type().":\n";
-  print $message->payload()->{'message'};
-  chomp($message->payload()->{'message'});
-  if ($opt{o}) {
-    open(MYFILE, '>'.$opt{o});
-  } else {
-    $opt{d} = "" unless $opt{d};
-    open(MYFILE, '>'.$opt{d}.'/'.$message->sender());
-  }
+  if ($message->sender() ne $sender) {  
+    my $payload = decode_base64($message->payload()->{'message'});
+    if ($opt{b}) { print "\007"; }
+    print $message->sender()." sent ".$message->type().":\n";
+    print $payload;
+    chomp($payload);
+    if ($opt{o}) {
+      open(MYFILE, '>'.$opt{o});
+    } else {
+      $opt{d} = "" unless $opt{d};
+      open(MYFILE, '>'.$opt{d}.'/'.$message->sender());
+    }
 
-  print  MYFILE decode_base64($message->payload()->{'message'});
-  close (MYFILE);
+    print MYFILE $payload;
+    close (MYFILE);
   }
 }
 
