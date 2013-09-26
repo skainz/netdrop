@@ -4,17 +4,20 @@ use strict;
 use Getopt::Std;
 use Net::MessageBus;
 use Data::Dumper;
+use YAML::Tiny;
 
 my %opt;
-getopts ('bd:o:', \%opt);
+getopts ('bc:d:o:', \%opt);
 
+my $config = YAML::Tiny->read($opt{c} or $ENV{HOME}."/.config/netboard") or die "No config.";
+$opt{o} or $opt{o} = $config->[0]->{"output-file"};
 my $MessageBus = Net::MessageBus->new(
-  server => '129.27.9.27',
-  port=>15000,
-  group => 'backend',
-  sender => 'simon',
-  username=>'john',
-  password=>'1234',
+  server => $config->[0]->{server},
+  port => $config->[0]->{port},
+  group => 'NetBoard',
+  sender => $config->[0]->{sender},
+  username => $config->[0]->{username},
+  password=>$config->[0]->{password},
 );
 
 $MessageBus->subscribe_all;

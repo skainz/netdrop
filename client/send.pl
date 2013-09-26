@@ -1,16 +1,18 @@
 #!/usr/bin/perl
 
+use strict;
 use Net::MessageBus;
 use Data::Dumper;
+use YAML::Tiny;
 
-
-    my $MessageBus = Net::MessageBus->new(
-	server => '129.27.9.27',
-	port=>15000,
-	group => 'backend',
-	sender => 'simon',
-	username=>'john',
-	password=>'1234',
+my $config = YAML::Tiny->read( $ENV{HOME}."/.config/netboard" ) or die "No config.";
+my $MessageBus = Net::MessageBus->new(
+	server => $config->[0]->{server},
+	port => $config->[0]->{port},
+	group => 'NetBoard',
+	sender => $config->[0]->{sender},
+	username => $config->[0]->{username},
+	password=>$config->[0]->{password},
     );
 
 
