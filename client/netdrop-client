@@ -9,7 +9,7 @@ use YAML::Tiny;
 my %opt;
 getopts ('bc:d:o:', \%opt);
 
-my $config = YAML::Tiny->read($opt{c} or $ENV{HOME}."/.config/netboard") or die "No config.";
+my $config = YAML::Tiny->read($opt{c} or $ENV{HOME}."/.config/netdrop") or die "No config.";
 $opt{o} or $opt{o} = $config->[0]->{client}->{"output-file"};
 my $MessageBus = Net::MessageBus->new(
   server => $config->[0]->{client}->{server},

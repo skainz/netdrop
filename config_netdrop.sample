@@ -1,4 +1,4 @@
-# Place in ~/.config/netboard
+# Copy to ~/.config/netdrop
 client:
   server: 129.27.9.27
   port: 15000

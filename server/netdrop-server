@@ -5,7 +5,7 @@ use strict;
 use Net::MessageBus::Server;
 use YAML::Tiny;
 
-my $config = YAML::Tiny->read( $ENV{HOME}."/.config/netboard" ) or die "No config.";
+my $config = YAML::Tiny->read( $ENV{HOME}."/.config/netdrop" ) or die "No config.";
 
 sub authenticate_method {
         my ($username, $password, $client_ip) = @_;
