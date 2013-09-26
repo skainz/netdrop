@@ -10,12 +10,14 @@ my %opt;
 getopts ('bc:d:o:', \%opt);
 
 my $config = YAML::Tiny->read($opt{c} or $ENV{HOME}."/.config/netdrop") or die "No config.";
+my $sender=$config->[0]->{client}->{sender} or $ENV{USER}.'@'.$ENV{HOSTNAME};
+
 $opt{o} or $opt{o} = $config->[0]->{client}->{"output-file"};
 my $MessageBus = Net::MessageBus->new(
   server => $config->[0]->{client}->{server},
   port => $config->[0]->{client}->{port},
   group => 'NetBoard',
-  sender => $config->[0]->{client}->{sender},
+  sender => $sender,
   username => $config->[0]->{client}->{username},
   password=>$config->[0]->{client}->{password},
 );
@@ -23,6 +25,8 @@ my $MessageBus = Net::MessageBus->new(
 $MessageBus->subscribe_all;
 
 while (my $message = $MessageBus->next_message()) {
+  if ($message->sender() ne $sender)
+  {  
   if ($opt{b}) { print "\007"; }
   print $message->sender()." sent ".$message->type().":\n";
   print $message->payload()->{'message'};
@@ -36,5 +40,6 @@ while (my $message = $MessageBus->next_message()) {
 
   print  MYFILE $message->payload()->{'message'};
   close (MYFILE);
+  }
 }
 
