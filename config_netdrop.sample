@@ -1,14 +1,14 @@
 # Copy to ~/.config/netdrop
 client:
-  server: 129.27.9.27
+  server: remote_ip
   port: 15000
   sender: mlang
-  username: john
+#  username: john
   password: 1234
   #output-file: /var/lib/brltty/clipboard
 server:
-  address: 129.27.9.73
+  address: 0.0.0.0
   port: 15000
-  username: john
+#  username: john
   password: 1234
 
