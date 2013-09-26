@@ -1,6 +1,13 @@
-server: 129.27.9.27
-port: 15000
-sender: mlang
-username: john
-password: 1234
-output-file: /var/lib/brltty/clipboard
+client:
+  server: 129.27.9.27
+  port: 15000
+  sender: mlang
+  username: john
+  password: 1234
+  #output-file: /var/lib/brltty/clipboard
+server:
+  address: 129.27.9.73
+  port: 15000
+  username: john
+  password: 1234
+

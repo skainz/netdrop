@@ -7,14 +7,13 @@ use YAML::Tiny;
 
 my $config = YAML::Tiny->read( $ENV{HOME}."/.config/netboard" ) or die "No config.";
 my $MessageBus = Net::MessageBus->new(
-	server => $config->[0]->{server},
-	port => $config->[0]->{port},
-	group => 'NetBoard',
-	sender => $config->[0]->{sender},
-	username => $config->[0]->{username},
-	password=>$config->[0]->{password},
-    );
-
+  server => $config->[0]->{client}->{server},
+  port => $config->[0]->{client}->{port},
+  group => 'NetBoard',
+  sender => $config->[0]->{client}->{sender},
+  username => $config->[0]->{client}->{username},
+  password=>$config->[0]->{client}->{password},
+);
 
 my @data=<STDIN>;
 
