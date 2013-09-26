@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 
+use strict;
 use Net::MessageBus;
 use Data::Dumper;
 
