@@ -10,7 +10,7 @@ my $MessageBus = Net::MessageBus->new(
   server => $config->[0]->{client}->{server},
   port => $config->[0]->{client}->{port},
   group => 'NetBoard',
-  sender => $config->[0]->{client}->{sender} or $ENV{USER},
+  sender => ($config->[0]->{client}->{sender} or $ENV{USER}),
   username => $config->[0]->{client}->{username},
   password=>$config->[0]->{client}->{password},
 );
