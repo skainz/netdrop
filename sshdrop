@@ -70,6 +70,7 @@ $SSH ${SSHDROP_IDENTITY:+-i "${SSHDROP_IDENTITY}"} \
      "tail -n 0 -f $SSHDROP_REMOTE_DIR/log" | while read sender type data
 do [ "$sender" != "$SSHDROP_SENDER" ] && case "$type" in
    clipboard)
+     echo
      echo "$sender sent:"
      [ -n "$SSHDROP_CLIPBOARD_OUTPUT_DIR" -a \
        -d "$SSHDROP_CLIPBOARD_OUTPUT_DIR" ] && {
