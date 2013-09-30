@@ -24,10 +24,19 @@ static void notif_libnotify_callback_open ( NotifyNotification *n, gchar *action
   GtkClipboard* cb=gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 
   gtk_clipboard_set_text(cb,"foobar",-1);
+  gtk_clipboard_store(cb);
   //  gtk.Clipboard();
   printf ("%s\n",user_data);
+ 
 }
 
+
+void status_icon_notification_closed_cb (NotifyNotification *notification,
+				    gpointer  icon)
+{
+  printf("popup closed\n");
+  //  gtk_main_quit();
+}
 
 
 int main(int argc, char **argv)
@@ -55,6 +64,8 @@ int main(int argc, char **argv)
     addIcon(example);
     notify_notification_add_action(example,"copy","Copy to Clipboard",(NotifyActionCallback)notif_libnotify_callback_open,name,NULL);
 
+    g_signal_connect(example,"closed",G_CALLBACK (status_icon_notification_closed_cb),NULL);
+
     //    notify_notification_add_action(example,"paste","Open Feed",(NotifyActionCallback)notif_libnotify_callback_open,NULL,NULL);
     // notify_notification_add_action(example,"open","Open Feed",(NotifyActionCallback)notif_libnotify_callback_open,NULL,NULL);
 
@@ -67,10 +78,13 @@ int main(int argc, char **argv)
     notify_notification_set_category(example,category);
     
     // set the urgency level of the notification
-    notify_notification_set_urgency (example,NOTIFY_URGENCY_CRITICAL);
+    notify_notification_set_urgency (example,NOTIFY_URGENCY_NORMAL);
     
     GError *error = NULL;
     notify_notification_show(example,&error);
 
     gtk_main();
 }
+
+
+ // gtk_main_quit();
