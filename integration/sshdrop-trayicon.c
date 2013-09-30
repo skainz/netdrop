@@ -159,7 +159,7 @@ void sigint_handler(int sig);
     notify_notification_set_category(example,category);
     
     // set the urgency level of the notification
-    notify_notification_set_urgency (example,NOTIFY_URGENCY_NORMAL);
+    notify_notification_set_urgency (example,NOTIFY_URGENCY_CRITICAL);
     
     //    GError *error = NULL;
     //    notify_notification_show(example,&error);
