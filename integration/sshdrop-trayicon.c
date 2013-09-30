@@ -1,10 +1,16 @@
 #include<gtk/gtk.h>
 #include<libnotify/notify.h>
 #include<stdio.h>
+#include <stdlib.h>
 
 
- NotifyNotification *example;
-
+NotifyNotification *example;
+//int counter=0;
+//char info[256];
+FILE* fp;
+char* filename;
+long file_size;
+char * data;
 
 void addIcon( NotifyNotification * notify )
 {
@@ -26,52 +32,52 @@ void addIcon( NotifyNotification * notify )
 
 void sigusr_handler(int sig)
 {
-    write(0, "Ahhh! SIGUSR!\n", 14);
+  //     write(0, "Ahhh! SIGUSR!\n", 14);
 
-    GError *error = NULL;
-    notify_notification_show(example,&error);
+      notify_notification_close(example,NULL);
+
+      fp=fopen(filename,"r");
+      if (!(fp==(FILE*)NULL))
+	{
+      fseek(fp,0,SEEK_END);
+      file_size=ftell(fp);
+      printf("filesize: %d\n",file_size);
+      fseek(fp,0,SEEK_SET);
+      data=malloc(sizeof(char)*file_size+1);
+      data[file_size]=0;
+      fread(data,1,file_size,fp);
+      fclose(fp);
+      
+
+      //   sprintf(info," %d",counter);
+      GError *error = NULL;
+      notify_notification_update(example,"SSHDrop",data,NULL);
+      notify_notification_show(example,&error);
+	} else
+	{
+	  printf("Unable to open file %s\n",filename);
+	}
+  
+
 
 }
 
 
 
 static void notif_libnotify_callback_open ( NotifyNotification *n, gchar *action, gpointer user_data ) {
+
   FILE *pf;
   char command[256];
 
-  //    sprintf(command,"/usr/bin/xclip -i /home/skainz/t.txt");
-  //sprintf(command,"export >/tmp/ts");
-
-  // printf("Command line: %s\n",command);
-
-  //int r=system(command);
-  //printf ("retval %d\n",r);
-
-  /*  printf("pf handle:%d\n",pf);
-  if (!pf)
-    {
-      sprintf(stderr,"Unable to open pipe.");
-    }
-  */
-  
-  //  fputs(command,pf);
-  //int ret=pclose(pf);
-
-  // if(WIFEXITED(ret))
-  //printf("retval: %d\n", ret);
-
-  //	g_assert(action != NULL);  sprintf(command,"/usr/bin/xclip -i /home/skainz/t.txt
-  //	g_assert(strcmp(action, "open") == 0);
+ 
   GtkClipboard* cb=gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 
-  gtk_clipboard_set_text(cb,"foobar",-1);
-  //gtk_clipboard_store(cb);
+  gtk_clipboard_set_text(cb,data,-1);
 
-  //  gtk.Clipboard();
   printf ("%s\n",user_data);
  
+ 
 
-  //  popen 
 }
 
 
@@ -79,14 +85,17 @@ void status_icon_notification_closed_cb (NotifyNotification *notification,
 				    gpointer  icon)
 {
 
- GtkClipboard* cb=gtk_clipboard_get(GDK_SELECTION_PRIMARY);
+  printf ("Close reason:%d\n",notify_notification_get_closed_reason(notification));
+  // GtkClipboard* cb=gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 
-  gtk_clipboard_set_text(cb,"foobar",-1);
+ //  gtk_clipboard_set_text(cb,"foobar",-1);
 
   printf("popup closed\n");
-  gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
+  // gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
   //      gtk_main_quit();
- 
+
+
+  //free(data);
 }
 
 
@@ -94,8 +103,18 @@ void status_icon_notification_closed_cb (NotifyNotification *notification,
 int main(int argc, char **argv)
 {
 
-void sigint_handler(int sig); /* prototype */
-    char s[200];
+  if (argc<2)
+    {
+      printf ("Usage: %s <filename>\n",argv[0]);
+      exit(1);
+    }
+
+  filename=argv[1];
+  printf("Using file %s\n",argv[1]);
+
+  
+void sigint_handler(int sig);
+//    char s[200];
     struct sigaction sa;
 
     sa.sa_handler = sigusr_handler;
@@ -111,47 +130,45 @@ void sigint_handler(int sig); /* prototype */
     // initialize gtk
     gtk_init(&argc,&argv);
     
-    char name[40] = "SSHBoard";
+    char name[40] = "SSHDrop";
     
     // initiate notify
     notify_init(name);
     
     // create a new notification
    
-    example = notify_notification_new(name,"Checking it out\nghjghjgjg\nssdfsdfsd",NULL);
+    example = notify_notification_new(name,"",NULL);
     
-    /*  Status Icon is not working properly */
-    // create an icon for the notification
-
-    //    GtkStatusIcon *icon = gtk_status_icon_new_from_stock (GTK_STOCK_YES);
-    //gtk_status_icon_set_visible(icon,TRUE);
-    // attach that icon to the notification
-    //    notify_notification_attach_to_status_icon (example,icon);
-    
+      
     addIcon(example);
     notify_notification_add_action(example,"copy","Copy to Clipboard",(NotifyActionCallback)notif_libnotify_callback_open,name,NULL);
 
     g_signal_connect(example,"closed",G_CALLBACK (status_icon_notification_closed_cb),NULL);
+    //    g_signal_connect(example,"timed-out",G_CALLBACK (status_icon_notification_closed_cb),NULL);
 
-    //    notify_notification_add_action(example,"paste","Open Feed",(NotifyActionCallback)notif_libnotify_callback_open,NULL,NULL);
+
+    //        notify_notification_add_action(example,"paste","Open Feed",(NotifyActionCallback)notif_libnotify_callback_open,name,NULL);
     // notify_notification_add_action(example,"open","Open Feed",(NotifyActionCallback)notif_libnotify_callback_open,NULL,NULL);
 
 
-    // set the timeout of the notification to 3 secs
-    notify_notification_set_timeout(example,3000);
+    // set the timeout of the notification to the default value
+    notify_notification_set_timeout(example,NOTIFY_EXPIRES_DEFAULT);
     
     // set the category so as to tell what kind it is
     char category[30] = "Testing Notifications";
     notify_notification_set_category(example,category);
     
     // set the urgency level of the notification
-    notify_notification_set_urgency (example,NOTIFY_URGENCY_NORMAL);
+    notify_notification_set_urgency (example,NOTIFY_URGENCY_CRITICAL);
     
     //    GError *error = NULL;
     //    notify_notification_show(example,&error);
+
+
 
     gtk_main();
 }
 
 
  // gtk_main_quit();
+//http://www.youtube.com/watch?v=yX8yrOAjfKM
