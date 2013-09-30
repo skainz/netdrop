@@ -53,6 +53,10 @@ EOF
   $SSH -S ~/.sshdrop/ssh_socket -O check $SSHDROP_REMOTE 2>/dev/null || {
     echo "Warning: Client not running, a password might be required."
   }
+  [ -r "$1" ] || {
+    echo "'$1' not found." >/dev/null 1>&2
+    exit 1
+  }
   file=$(cat $1 | $SSH -T -S ~/.sshdrop/ssh_socket $SSHDROP_REMOTE \
          "f=\$(mktemp --tmpdir=$SSHDROP_REMOTE_DIR); echo \$f; cat - >\$f")
   $SSH -n -T -S ~/.sshdrop/ssh_socket $SSHDROP_REMOTE \
