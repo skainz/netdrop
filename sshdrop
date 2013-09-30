@@ -28,6 +28,11 @@ SSHDROP_SENDER=${USER}@$(hostname)
 
 # A directory of the most recent clipboard broadcasts per sender.
 #SSHDROP_CLIPBOARD_OUTPUT_DIR=""
+
+# Calls whenever a clipboard paste was received.
+sshdrop_hook_clipboard () {
+  return 0
+}
 EOF
 }
 . ~/.sshdrop/config
@@ -80,7 +85,10 @@ do [ "$sender" != "$SSHDROP_SENDER" ] && case "$type" in
        -d "$SSHDROP_CLIPBOARD_OUTPUT_DIR" ] && {
        named_output="${SSHDROP_CLIPBOARD_OUTPUT_DIR}/$sender"
      }
-     $SSH_GET $data | tee $named_output $SSHDROP_CLIPBOARD_OUTPUT_FILE;;
+     $SSH_GET $data | tee $named_output $SSHDROP_CLIPBOARD_OUTPUT_FILE
+     export sender
+     sshdrop_hook_${type} || true
+     ;;
    *) echo "Unknown type '${type}'." >/dev/null 1>&2;;
    esac
 done
