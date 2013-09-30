@@ -1,4 +1,4 @@
-
+#include<gtk/gtk.h>
 #include<libnotify/notify.h>
 
 void addIcon( NotifyNotification * notify )
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
     
     // create a new notification
     NotifyNotification *example;
-    example = notify_notification_new(name,"Checking it out\nghjghjgjg\nssdfsdfsd",NULL,NULL);
+    example = notify_notification_new(name,"Checking it out\nghjghjgjg\nssdfsdfsd",NULL);
     
     /*  Status Icon is not working properly */
     // create an icon for the notification
