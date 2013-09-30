@@ -53,7 +53,7 @@ EOF
   $SSH -S ~/.sshdrop/ssh_socket -O check $SSHDROP_REMOTE 2>/dev/null || {
     echo "Warning: Client not running, a password might be required."
   }
-  [ -r "$1" ] || {
+  [ "$1" != "-" -a ! -r "$1" ] && {
     echo "'$1' not found." >/dev/null 1>&2
     exit 1
   }
