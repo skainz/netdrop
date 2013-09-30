@@ -1,5 +1,10 @@
 #include<gtk/gtk.h>
 #include<libnotify/notify.h>
+#include<stdio.h>
+
+
+ NotifyNotification *example;
+
 
 void addIcon( NotifyNotification * notify )
 {
@@ -18,29 +23,91 @@ void addIcon( NotifyNotification * notify )
     }
 }
 
+
+void sigusr_handler(int sig)
+{
+    write(0, "Ahhh! SIGUSR!\n", 14);
+
+    GError *error = NULL;
+    notify_notification_show(example,&error);
+
+}
+
+
+
 static void notif_libnotify_callback_open ( NotifyNotification *n, gchar *action, gpointer user_data ) {
-  //	g_assert(action != NULL);
+  FILE *pf;
+  char command[256];
+
+  //    sprintf(command,"/usr/bin/xclip -i /home/skainz/t.txt");
+  //sprintf(command,"export >/tmp/ts");
+
+  // printf("Command line: %s\n",command);
+
+  //int r=system(command);
+  //printf ("retval %d\n",r);
+
+  /*  printf("pf handle:%d\n",pf);
+  if (!pf)
+    {
+      sprintf(stderr,"Unable to open pipe.");
+    }
+  */
+  
+  //  fputs(command,pf);
+  //int ret=pclose(pf);
+
+  // if(WIFEXITED(ret))
+  //printf("retval: %d\n", ret);
+
+  //	g_assert(action != NULL);  sprintf(command,"/usr/bin/xclip -i /home/skainz/t.txt
   //	g_assert(strcmp(action, "open") == 0);
   GtkClipboard* cb=gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 
   gtk_clipboard_set_text(cb,"foobar",-1);
-  gtk_clipboard_store(cb);
+  //gtk_clipboard_store(cb);
+
   //  gtk.Clipboard();
   printf ("%s\n",user_data);
  
+
+  //  popen 
 }
 
 
 void status_icon_notification_closed_cb (NotifyNotification *notification,
 				    gpointer  icon)
 {
+
+ GtkClipboard* cb=gtk_clipboard_get(GDK_SELECTION_PRIMARY);
+
+  gtk_clipboard_set_text(cb,"foobar",-1);
+
   printf("popup closed\n");
-  //  gtk_main_quit();
+  gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
+  //      gtk_main_quit();
+ 
 }
+
 
 
 int main(int argc, char **argv)
 {
+
+void sigint_handler(int sig); /* prototype */
+    char s[200];
+    struct sigaction sa;
+
+    sa.sa_handler = sigusr_handler;
+    sa.sa_flags = 0; // or SA_RESTART
+    sigemptyset(&sa.sa_mask);
+
+    if (sigaction(SIGUSR1, &sa, NULL) == -1) {
+        perror("sigaction");
+        exit(1);
+    }
+
+
     // initialize gtk
     gtk_init(&argc,&argv);
     
@@ -50,7 +117,7 @@ int main(int argc, char **argv)
     notify_init(name);
     
     // create a new notification
-    NotifyNotification *example;
+   
     example = notify_notification_new(name,"Checking it out\nghjghjgjg\nssdfsdfsd",NULL);
     
     /*  Status Icon is not working properly */
@@ -80,8 +147,8 @@ int main(int argc, char **argv)
     // set the urgency level of the notification
     notify_notification_set_urgency (example,NOTIFY_URGENCY_NORMAL);
     
-    GError *error = NULL;
-    notify_notification_show(example,&error);
+    //    GError *error = NULL;
+    //    notify_notification_show(example,&error);
 
     gtk_main();
 }
