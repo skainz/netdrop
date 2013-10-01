@@ -86,9 +86,8 @@ do [ "$sender" != "$SSHDROP_SENDER" ] && case "$type" in
        named_output="${SSHDROP_CLIPBOARD_OUTPUT_DIR}/$sender"
      }
      $SSH_GET $data | tee $named_output $SSHDROP_CLIPBOARD_OUTPUT_FILE
-     export sender
-     sshdrop_hook_${type} || true
      ;;
    *) echo "Unknown type '${type}'." >/dev/null 1>&2;;
    esac
+   declare -F "sshdrop_hook_${type}" && sshdrop_hook_${type} "$sender" "$data"
 done
