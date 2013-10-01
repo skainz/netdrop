@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -94,5 +94,5 @@ do [ "$sender" != "$SSHDROP_SENDER" ] && case "$type" in
      ;;
    *) echo "Unknown type '${type}'." >/dev/null 1>&2;;
    esac
-   declare -F "sshdrop_hook_${type}" && sshdrop_hook_${type} "$sender" "$data"
+   declare -F "sshdrop_hook_${type}" >/dev/null && sshdrop_hook_${type} "$sender" "$data"
 done
