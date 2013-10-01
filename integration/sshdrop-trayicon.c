@@ -16,6 +16,26 @@ long file_size;
 char* data;
 char* sender;
 
+GtkWidget *menu, *menuItemView, *menuItemExit, *sep;
+
+int setup_menu()
+{
+        menu = gtk_menu_new();
+        menuItemView = gtk_menu_item_new_with_label ("SSHDrop");
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), sep);
+	//  g_signal_connect (G_OBJECT (menuItemView), "activate", G_CALLBACK (trayView), window);
+
+        sep = gtk_separator_menu_item_new();
+        menuItemExit = gtk_menu_item_new_with_label ("Exit");
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), menuItemView);
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), sep);
+        gtk_menu_shell_append (GTK_MENU_SHELL (menu), menuItemExit);
+	//     g_signal_connect (G_OBJECT (menuItemExit), "activate", G_CALLBACK (trayExit), NULL);
+        gtk_widget_show_all (menu);
+
+}
+
+
 void addIcon( NotifyNotification * notify )
 {
     int size = 32;
@@ -106,6 +126,16 @@ callback (GFileMonitor *mon, GFile *first, GFile *second, GFileMonitorEvent even
 }
 
 
+void tray_icon_on_click(GtkStatusIcon *status_icon, gpointer user_data)
+{
+        printf("Clicked on tray icon\n");
+}
+
+static void trayIconPopup(GtkStatusIcon *status_icon, guint button, guint32 activate_time, gpointer popUpMenu)
+{
+    gtk_menu_popup(GTK_MENU(popUpMenu), NULL, NULL, gtk_status_icon_position_menu, status_icon, button, activate_time);
+}
+
 
 
 int main(int argc, char **argv)
@@ -158,7 +188,18 @@ int main(int argc, char **argv)
     notify_notification_set_urgency (example,NOTIFY_URGENCY_NORMAL);
     
     GtkStatusIcon *status=gtk_status_icon_new_from_stock(GTK_STOCK_PASTE);
-    gtk_status_icon_set_tooltip(status, "SSHDrop");
+    gtk_status_icon_set_tooltip(status, "SSHDrop - Click to post clipboard data");
+
+
+    setup_menu();
+
+        g_signal_connect(G_OBJECT(status), "activate",
+                         G_CALLBACK(tray_icon_on_click), NULL);
+
+     g_signal_connect(G_OBJECT(status),
+                         "popup-menu",
+                         G_CALLBACK(trayIconPopup), menu);
+
 
     gtk_main();
 }
