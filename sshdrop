@@ -71,6 +71,11 @@ EOF
 }
 
 # The client/listener
+$SSH -S ~/.sshdrop/ssh_socket -O check $SSHDROP_REMOTE 2>/dev/null || {
+  echo "Client already running, not starting a second time."
+  exit 1
+}
+
 SSH_GET="$SSH -n -T -S ~/.sshdrop/ssh_socket $SSHDROP_REMOTE cat"
 
 $SSH ${SSHDROP_IDENTITY:+-i "${SSHDROP_IDENTITY}"} \
