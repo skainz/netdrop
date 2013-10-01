@@ -71,7 +71,7 @@ EOF
 }
 
 # The client/listener
-$SSH -S ~/.sshdrop/ssh_socket -O check $SSHDROP_REMOTE 2>/dev/null || {
+$SSH -S ~/.sshdrop/ssh_socket -O check $SSHDROP_REMOTE 2>/dev/null && {
   echo "Client already running, not starting a second time."
   exit 1
 }
