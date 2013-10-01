@@ -18,7 +18,8 @@ char* data;
 char* sender;
 
 GtkWidget *menu, *menuItemView, *menuItemExit, *sep;
-
+const char *global_text;
+char *send_data;
 
 static void trayExit(GtkMenuItem *item, gpointer user_data)
 {
@@ -27,25 +28,18 @@ static void trayExit(GtkMenuItem *item, gpointer user_data)
     gtk_main_quit();
 }
 
-static void trayView(GtkMenuItem *item, gpointer windows)
-{
-  printf("We would paste clipboard content here...\n");
-}
 
 int setup_menu()
 {
-        menu = gtk_menu_new();
-        menuItemView = gtk_menu_item_new_with_label ("SSHDrop");
-    
-	//  g_signal_connect (G_OBJECT (menuItemView), "activate", G_CALLBACK (trayView), window);
-
-        sep = gtk_separator_menu_item_new();
-        menuItemExit = gtk_menu_item_new_with_label ("Exit");
-        gtk_menu_shell_append (GTK_MENU_SHELL (menu), menuItemView);
-        gtk_menu_shell_append (GTK_MENU_SHELL (menu), sep);
-        gtk_menu_shell_append (GTK_MENU_SHELL (menu), menuItemExit);
-	     g_signal_connect (G_OBJECT (menuItemExit), "activate", G_CALLBACK (trayExit), NULL);
-        gtk_widget_show_all (menu);
+  menu = gtk_menu_new();
+  menuItemView = gtk_menu_item_new_with_label ("SSHDrop");
+  sep = gtk_separator_menu_item_new();
+  menuItemExit = gtk_menu_item_new_with_label ("Exit");
+  gtk_menu_shell_append (GTK_MENU_SHELL (menu), menuItemView);
+  gtk_menu_shell_append (GTK_MENU_SHELL (menu), sep);
+  gtk_menu_shell_append (GTK_MENU_SHELL (menu), menuItemExit);
+  g_signal_connect (G_OBJECT (menuItemExit), "activate", G_CALLBACK (trayExit), NULL);
+  gtk_widget_show_all (menu);
 
 }
 
@@ -73,18 +67,21 @@ void addIcon( NotifyNotification * notify )
 static void notif_libnotify_callback_open ( NotifyNotification *n, gchar *action, gpointer user_data ) {
 
   FILE *pf;
-  char command[256];
+  //char command[256];
 
  
   GtkClipboard* cb=gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 
   gtk_clipboard_set_text(cb,data,-1);
 
-  //  printf ("%s\n",user_data);
- 
- 
+  
+  free(data);
+  data=NULL;
 
 }
+
+
+
 
 
 void status_icon_notification_closed_cb (NotifyNotification *notification,
@@ -103,9 +100,12 @@ callback (GFileMonitor *mon, GFile *first, GFile *second, GFileMonitorEvent even
     {
 
  notify_notification_close(example,NULL);
-  //char *msg = decode (event);
+
+
   printf ("file changed %s\n",g_file_get_path(first));
+
   //  printf ("event: %d\n",event);
+
   sender=g_file_get_basename(first);
   fp=fopen(g_file_get_path(first),"r");
   if (!(fp==(FILE*)NULL))
@@ -140,6 +140,26 @@ callback (GFileMonitor *mon, GFile *first, GFile *second, GFileMonitorEvent even
 }
 
 
+void global_text_receive (GtkClipboard *clipboard, const gchar *text, gpointer data)
+{
+  //  printf("global text_receive\n");
+        global_text = text;
+
+	FILE *output;
+	output=popen("sshdrop -","w");
+	if (!output)
+	  {
+	    printf("Error opening subprocess!!\n");
+	  }
+	printf ("cb content:%s\n",global_text);
+	fprintf(output,"%s\n",global_text);
+	int retval=pclose(output);
+
+	printf("Exit code: %d\n",retval);
+	
+} 
+
+
 int ssh_socket_present()
 {
 
@@ -152,10 +172,9 @@ int ssh_socket_present()
 
 void tray_icon_on_click(GtkStatusIcon *status_icon, gpointer user_data)
 {
-        printf("Clicked on tray icon\n");
-	printf("We would paste clipboard content here...\n");
-	ssh_socket_present();
-
+  
+  gtk_clipboard_request_text (gtk_clipboard_get (GDK_SELECTION_PRIMARY), global_text_receive, NULL);
+  
 }
 
 static void trayIconPopup(GtkStatusIcon *status_icon, guint button, guint32 activate_time, gpointer popUpMenu)
@@ -231,6 +250,3 @@ int main(int argc, char **argv)
     gtk_main();
 }
 
-
- // gtk_main_quit();
-//http://www.youtube.com/watch?v=yX8yrOAjfKM
