@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -62,7 +62,7 @@ EOF
     echo "'$1' not found." >/dev/null 1>&2
     exit 1
   }
-  file=$(cat $1 | $SSH -T -S ~/.sshdrop/ssh_socket $SSHDROP_REMOTE \
+  file=$(cat "$1" | $SSH -T -S ~/.sshdrop/ssh_socket $SSHDROP_REMOTE \
          "f=\$(mktemp --tmpdir=$SSHDROP_REMOTE_DIR); echo \$f; cat - >\$f")
   $SSH -n -T -S ~/.sshdrop/ssh_socket $SSHDROP_REMOTE \
        "echo '$SSHDROP_SENDER clipboard $file' >>$SSHDROP_REMOTE_DIR/log"
@@ -94,5 +94,5 @@ do [ "$sender" != "$SSHDROP_SENDER" ] && case "$type" in
      ;;
    *) echo "Unknown type '${type}'." >/dev/null 1>&2;;
    esac
-   declare -F "sshdrop_hook_${type}" && sshdrop_hook_${type} "$sender" "$data"
+   declare -F "sshdrop_hook_${type}" >/dev/null && sshdrop_hook_${type} "$sender" "$data"
 done
