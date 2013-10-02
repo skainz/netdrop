@@ -234,7 +234,7 @@ int main(int argc, char **argv)
     notify_notification_set_urgency (example,NOTIFY_URGENCY_NORMAL);
     
     GtkStatusIcon *status=gtk_status_icon_new_from_stock(GTK_STOCK_PASTE);
-    gtk_status_icon_set_tooltip(status, "SSHDrop - Click to post clipboard data");
+    gtk_status_icon_set_tooltip_text(status, "SSHDrop - Click to post clipboard data");
 
 
     setup_menu();
