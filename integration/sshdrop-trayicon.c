@@ -197,7 +197,6 @@ int main(int argc, char **argv)
       exit(1);
     }
 
-  g_type_init();
   file=g_file_new_for_path(argv[1]);
   mon=g_file_monitor(file,G_FILE_MONITOR_EVENT_CHANGED,NULL,NULL);
 
