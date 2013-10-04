@@ -1,10 +1,11 @@
-#include<gtk/gtk.h>
-#include<libnotify/notify.h>
-#include<stdio.h>
+#include <gtk/gtk.h>
+#include <libnotify/notify.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <gio/gio.h>
 #include <string.h>
 #include <unistd.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 NotifyNotification *example;
 //int counter=0;
@@ -20,6 +21,44 @@ char* sender;
 GtkWidget *menu, *menuItemView, *menuItemExit, *sep;
 const char *global_text;
 char *send_data;
+
+
+void init_qr()
+{
+GdkPixbuf* bild=gdk_pixbuf_new(GDK_COLORSPACE_RGB,FALSE,8,400,400 );
+ printf("%d\n",bild);
+
+}
+
+static void
+put_pixel (GdkPixbuf *pixbuf, int x, int y, guchar red, guchar green, guchar blue, guchar alpha)
+{
+  int width, height, rowstride, n_channels;
+  guchar *pixels, *p;
+
+  n_channels = gdk_pixbuf_get_n_channels (pixbuf);
+
+  g_assert (gdk_pixbuf_get_colorspace (pixbuf) == GDK_COLORSPACE_RGB);
+  g_assert (gdk_pixbuf_get_bits_per_sample (pixbuf) == 8);
+  g_assert (gdk_pixbuf_get_has_alpha (pixbuf));
+  g_assert (n_channels == 4);
+
+  width = gdk_pixbuf_get_width (pixbuf);
+  height = gdk_pixbuf_get_height (pixbuf);
+
+  g_assert (x >= 0 && x < width);
+  g_assert (y >= 0 && y < height);
+
+  rowstride = gdk_pixbuf_get_rowstride (pixbuf);
+  pixels = gdk_pixbuf_get_pixels (pixbuf);
+
+  p = pixels + y * rowstride + x * n_channels;
+  p[0] = red;
+  p[1] = green;
+  p[2] = blue;
+  p[3] = alpha;
+}
+
 
 static void trayExit(GtkMenuItem *item, gpointer user_data)
 {
@@ -67,13 +106,9 @@ void addIcon( NotifyNotification * notify )
 static void notif_libnotify_callback_open ( NotifyNotification *n, gchar *action, gpointer user_data ) {
 
   FILE *pf;
-  //char command[256];
-
- 
   GtkClipboard* cb=gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 
   gtk_clipboard_set_text(cb,data,-1);
-
   
   free(data);
   data=NULL;
@@ -190,13 +225,16 @@ int main(int argc, char **argv)
   GFile *file;
   GFileMonitor *mon;
 
-
+ g_type_init(); 
   if (argc<2)
     {
       printf ("Usage: %s <directory>\n",argv[0]);
       exit(1);
     }
 
+
+  init_qr();
+   
   file=g_file_new_for_path(argv[1]);
   mon=g_file_monitor(file,G_FILE_MONITOR_EVENT_CHANGED,NULL,NULL);
 
@@ -205,7 +243,7 @@ int main(int argc, char **argv)
 
     // initialize gtk
     gtk_init(&argc,&argv);
-    
+    g_type_init(); 
     char name[40] = "SSHDrop";
     
     // initiate notify
@@ -234,18 +272,18 @@ int main(int argc, char **argv)
     
     GtkStatusIcon *status=gtk_status_icon_new_from_stock(GTK_STOCK_PASTE);
     gtk_status_icon_set_tooltip_text(status, "SSHDrop - Click to post clipboard data");
-
-
+    
+    
     setup_menu();
-
-        g_signal_connect(G_OBJECT(status), "activate",
-                         G_CALLBACK(tray_icon_on_click), NULL);
-
-     g_signal_connect(G_OBJECT(status),
-                         "popup-menu",
-                         G_CALLBACK(trayIconPopup), menu);
-
-
+    
+    g_signal_connect(G_OBJECT(status), "activate",
+		     G_CALLBACK(tray_icon_on_click), NULL);
+    
+    g_signal_connect(G_OBJECT(status),
+		     "popup-menu",
+		     G_CALLBACK(trayIconPopup), menu);
+    
+    
     gtk_main();
 }
 
