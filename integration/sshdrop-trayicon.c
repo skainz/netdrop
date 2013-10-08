@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
+#include <qrencode.h>
+
 NotifyNotification *example;
 //int counter=0;
 //char info[256];
@@ -22,14 +24,72 @@ GtkWidget *menu, *menuItemView, *menuItemExit, *sep;
 const char *global_text;
 char *send_data;
 
+GtkWindow *qr_window;
+GtkWidget *qr_img;
 
-void init_qr()
+void setblock(GdkPixbuf *bild,int y,int x,int red,int green,int blue,int dotsize)
 {
-GdkPixbuf* bild=gdk_pixbuf_new(GDK_COLORSPACE_RGB,FALSE,8,400,400 );
- printf("%d\n",bild);
-
+  
+  guchar *p;
+  
+  int n_channels = gdk_pixbuf_get_n_channels (bild);
+  guchar * pixels=gdk_pixbuf_get_pixels(bild);
+  int rowstride = gdk_pixbuf_get_rowstride (bild);
+  
+  int a,b;
+  
+  
+  for (b=x*dotsize;b<(x*dotsize)+dotsize;b++)
+    for (a=y*dotsize;a<(y*dotsize)+dotsize;a++)
+      {
+	p=pixels+b*rowstride+a*n_channels;
+	p[0]=red;
+	p[1]=green;
+	p[2]=blue;
+      }
 }
 
+GdkPixbuf* init_qr(int dotsize,char* content)
+{
+  
+  GdkPixbuf *bild;
+  QRcode* qr=0;
+  int i,j;
+
+  
+  qr=QRcode_encodeString8bit(content,0,QR_ECLEVEL_H);
+  
+  bild=gdk_pixbuf_new(GDK_COLORSPACE_RGB,FALSE,8,(qr->width+2)*dotsize,(qr->width+2)*dotsize );
+  
+  for (i=0;i<qr->width+2;i++)
+    {
+      setblock(bild,i,0,255,255,255,dotsize);
+    }
+  
+  for (i=0;i<qr->width;i++)
+    {
+      setblock(bild,0,i+1,255,255,255,dotsize);
+      for (j = qr->width - 1; j >= 0; j--) 
+	{
+	  if ((qr->data[j*qr->width + i] & 0x1) == 0)
+	    {
+	      setblock(bild,qr->width-j,i+1,255,255,255,dotsize);
+	    }
+	}
+      setblock(bild,qr->width+1,i+1,255,255,255,dotsize);
+    }
+    
+  for (i=0;i<qr->width+2;i++)
+    {
+      setblock(bild,i,qr->width+1,255,255,255,dotsize);
+    }
+
+  free(qr);
+ 
+  return bild;
+
+}
+/*
 static void
 put_pixel (GdkPixbuf *pixbuf, int x, int y, guchar red, guchar green, guchar blue, guchar alpha)
 {
@@ -58,7 +118,7 @@ put_pixel (GdkPixbuf *pixbuf, int x, int y, guchar red, guchar green, guchar blu
   p[2] = blue;
   p[3] = alpha;
 }
-
+*/
 
 static void trayExit(GtkMenuItem *item, gpointer user_data)
 {
@@ -91,13 +151,13 @@ void addIcon( NotifyNotification * notify )
 
     gtk_icon_size_lookup( GTK_ICON_SIZE_DIALOG, &size, &size );
     theme = gtk_icon_theme_get_default( );
-         icon = gtk_icon_theme_load_icon( theme, "edit-paste", size, 0, NULL );
- 
-   if( icon != NULL )
-    {
+    icon = gtk_icon_theme_load_icon( theme, "edit-paste", size, 0, NULL );
+    
+    if( icon != NULL )
+      {
         notify_notification_set_icon_from_pixbuf( notify, icon );
         g_object_unref( icon );
-    }
+      }
 }
 
 
@@ -114,6 +174,55 @@ static void notif_libnotify_callback_open ( NotifyNotification *n, gchar *action
   data=NULL;
 
 }
+
+static void click_qr_callback()
+{
+  printf("clicked!!\n");
+  gtk_widget_hide(GTK_WIDGET(qr_window));
+  free(qr_img);
+  //  free(qr);
+
+}
+
+static void notif_libnotify_callback_qrcode ( NotifyNotification *n, gchar *action, gpointer user_data ) {
+
+  FILE *pf;
+  GtkClipboard* cb=gtk_clipboard_get(GDK_SELECTION_PRIMARY);
+
+ 
+  GtkWidget *event_box=gtk_event_box_new();
+  
+  GdkPixbuf *bild=init_qr(16,data);
+
+
+  qr_img=gtk_image_new_from_pixbuf(bild);
+  qr_window = GTK_WINDOW(gtk_window_new (GTK_WINDOW_TOPLEVEL));
+  gtk_window_set_resizable(qr_window,FALSE);
+  gtk_window_set_title(qr_window,"Click to close.");
+
+  gtk_container_add(GTK_CONTAINER(event_box),qr_img);
+  gtk_container_add (GTK_CONTAINER(qr_window), event_box);
+  
+  
+  gtk_widget_show (event_box);
+  gtk_widget_show (qr_img);
+  gtk_window_present (qr_window);
+  
+  g_signal_connect(G_OBJECT(event_box),
+		   "button_press_event",
+		   G_CALLBACK(click_qr_callback),
+		   qr_img);
+
+
+  
+
+  gtk_clipboard_set_text(cb,data,-1);
+  
+  free(data);
+  data=NULL;
+
+}
+
 
 
 
@@ -233,7 +342,7 @@ int main(int argc, char **argv)
     }
 
 
-  init_qr();
+
    
   file=g_file_new_for_path(argv[1]);
   mon=g_file_monitor(file,G_FILE_MONITOR_EVENT_CHANGED,NULL,NULL);
@@ -256,6 +365,8 @@ int main(int argc, char **argv)
       
     addIcon(example);
     notify_notification_add_action(example,"copy","Copy to Clipboard",(NotifyActionCallback)notif_libnotify_callback_open,name,NULL);
+    notify_notification_add_action(example,"copy","QR-Code",(NotifyActionCallback)notif_libnotify_callback_qrcode,name,NULL);
+
 
     g_signal_connect(example,"closed",G_CALLBACK (status_icon_notification_closed_cb),NULL);
 
@@ -283,6 +394,17 @@ int main(int argc, char **argv)
 		     "popup-menu",
 		     G_CALLBACK(trayIconPopup), menu);
     
+    
+   
+
+    //      img=gtk_image_new_from_file("aktion.png");
+    //   img=gtk_image_new_from_pixbuf(bild);
+    //  printf ("%d\n",img);
+
+    //    GtkWidget *pixmapwid;
+    //    pixmapwid = gtk_pixmap_new (bild, null);
+
+ 
     
     gtk_main();
 }
