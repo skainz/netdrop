@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
+#include <canberra-gtk.h>
+
 #include <qrencode.h>
 
 NotifyNotification *example;
@@ -26,6 +28,8 @@ char *send_data;
 
 GtkWindow *qr_window;
 GtkWidget *qr_img;
+
+ca_context *context=NULL;
 
 void setblock(GdkPixbuf *bild,int y,int x,int red,int green,int blue,int dotsize)
 {
@@ -179,7 +183,7 @@ static void click_qr_callback()
 {
   printf("clicked!!\n");
   gtk_widget_hide(GTK_WIDGET(qr_window));
-  free(qr_img);
+  //  free(qr_img);
   //  free(qr);
 
 }
@@ -274,6 +278,11 @@ callback (GFileMonitor *mon, GFile *first, GFile *second, GFileMonitorEvent even
       preview[255]=0;
       notify_notification_update(example,sender,preview,NULL);
       notify_notification_show(example,&error);
+
+      int retval=ca_context_play(context, 0, CA_PROP_MEDIA_FILENAME, "/usr/share/sounds/freedesktop/stereo/complete.oga", NULL);
+      printf ("soundplay %d:%s\n",retval,ca_strerror(retval));
+
+
     } else
     {
       printf("Unable to open file %s\n",filename);
@@ -327,6 +336,14 @@ static void trayIconPopup(GtkStatusIcon *status_icon, guint button, guint32 acti
 }
 
 
+
+
+void init_canberra()
+{
+  printf("Context create: %d\n", ca_context_create(&context));
+  printf("Context props: %d\n", ca_context_change_props(context, CA_PROP_CANBERRA_XDG_THEME_NAME, "theme-name", NULL));
+
+}
 
 int main(int argc, char **argv)
 {
@@ -405,6 +422,10 @@ int main(int argc, char **argv)
     //    pixmapwid = gtk_pixmap_new (bild, null);
 
  
+    init_canberra();
+    
+    
+    
     
     gtk_main();
 }
