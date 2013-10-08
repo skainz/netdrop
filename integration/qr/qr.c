@@ -8,7 +8,7 @@
 int main()
 {
   
-  char* url="http://familiekainz.at";
+  char* url="foo";
   int r;
   
   QRcode* qr=0;
