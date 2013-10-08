@@ -4,4 +4,6 @@ cmake_install.cmake
 install_manifest.txt
 Makefile
 /integration/sshdrop-trayicon
+integration/qr/qr
+integration/textqr
 
