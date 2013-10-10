@@ -28,7 +28,8 @@ char *send_data;
 
 GtkWindow *qr_window;
 GtkWidget *qr_img;
-
+GtkWidget *event_box;
+GdkPixbuf *bild;
 ca_context *context=NULL;
 
 void setblock(GdkPixbuf *bild,int y,int x,int red,int green,int blue,int dotsize)
@@ -42,6 +43,7 @@ void setblock(GdkPixbuf *bild,int y,int x,int red,int green,int blue,int dotsize
   
   int a,b;
   
+
   
   for (b=x*dotsize;b<(x*dotsize)+dotsize;b++)
     for (a=y*dotsize;a<(y*dotsize)+dotsize;a++)
@@ -55,14 +57,13 @@ void setblock(GdkPixbuf *bild,int y,int x,int red,int green,int blue,int dotsize
 
 GdkPixbuf* init_qr(int dotsize,char* content)
 {
-  
-  GdkPixbuf *bild;
-  QRcode* qr=0;
+  QRcode* qr=NULL;
   int i,j;
 
-  
   qr=QRcode_encodeString8bit(content,0,QR_ECLEVEL_H);
   
+  // Size of QR code image needs to be qr->width+2 to paint a border around.
+  // This helps cameras to find the code easier.
   bild=gdk_pixbuf_new(GDK_COLORSPACE_RGB,FALSE,8,(qr->width+2)*dotsize,(qr->width+2)*dotsize );
   
   for (i=0;i<qr->width+2;i++)
@@ -78,51 +79,26 @@ GdkPixbuf* init_qr(int dotsize,char* content)
 	  if ((qr->data[j*qr->width + i] & 0x1) == 0)
 	    {
 	      setblock(bild,qr->width-j,i+1,255,255,255,dotsize);
+	    } 
+	  else
+	    {
+	      setblock(bild,qr->width-j,i+1,0,0,0,dotsize);
 	    }
 	}
       setblock(bild,qr->width+1,i+1,255,255,255,dotsize);
     }
-    
+
   for (i=0;i<qr->width+2;i++)
     {
       setblock(bild,i,qr->width+1,255,255,255,dotsize);
     }
-
-  free(qr);
+  
+    free(qr);
  
   return bild;
 
 }
-/*
-static void
-put_pixel (GdkPixbuf *pixbuf, int x, int y, guchar red, guchar green, guchar blue, guchar alpha)
-{
-  int width, height, rowstride, n_channels;
-  guchar *pixels, *p;
 
-  n_channels = gdk_pixbuf_get_n_channels (pixbuf);
-
-  g_assert (gdk_pixbuf_get_colorspace (pixbuf) == GDK_COLORSPACE_RGB);
-  g_assert (gdk_pixbuf_get_bits_per_sample (pixbuf) == 8);
-  g_assert (gdk_pixbuf_get_has_alpha (pixbuf));
-  g_assert (n_channels == 4);
-
-  width = gdk_pixbuf_get_width (pixbuf);
-  height = gdk_pixbuf_get_height (pixbuf);
-
-  g_assert (x >= 0 && x < width);
-  g_assert (y >= 0 && y < height);
-
-  rowstride = gdk_pixbuf_get_rowstride (pixbuf);
-  pixels = gdk_pixbuf_get_pixels (pixbuf);
-
-  p = pixels + y * rowstride + x * n_channels;
-  p[0] = red;
-  p[1] = green;
-  p[2] = blue;
-  p[3] = alpha;
-}
-*/
 
 static void trayExit(GtkMenuItem *item, gpointer user_data)
 {
@@ -166,7 +142,6 @@ void addIcon( NotifyNotification * notify )
 
 
 
-
 static void notif_libnotify_callback_open ( NotifyNotification *n, gchar *action, gpointer user_data ) {
 
   FILE *pf;
@@ -181,22 +156,16 @@ static void notif_libnotify_callback_open ( NotifyNotification *n, gchar *action
 
 static void click_qr_callback()
 {
-  printf("clicked!!\n");
-  gtk_widget_hide(GTK_WIDGET(qr_window));
-  //  free(qr_img);
-  //  free(qr);
-
+  gtk_widget_destroy(GTK_WIDGET(qr_window));
 }
 
 static void notif_libnotify_callback_qrcode ( NotifyNotification *n, gchar *action, gpointer user_data ) {
 
-  FILE *pf;
   GtkClipboard* cb=gtk_clipboard_get(GDK_SELECTION_PRIMARY);
-
- 
-  GtkWidget *event_box=gtk_event_box_new();
+  event_box=gtk_event_box_new();
   
-  GdkPixbuf *bild=init_qr(16,data);
+ 
+  bild=init_qr(16,data);
 
 
   qr_img=gtk_image_new_from_pixbuf(bild);
@@ -212,13 +181,8 @@ static void notif_libnotify_callback_qrcode ( NotifyNotification *n, gchar *acti
   gtk_widget_show (qr_img);
   gtk_window_present (qr_window);
   
-  g_signal_connect(G_OBJECT(event_box),
-		   "button_press_event",
-		   G_CALLBACK(click_qr_callback),
-		   qr_img);
+  g_signal_connect(G_OBJECT(event_box),"button_press_event", G_CALLBACK(click_qr_callback),  qr_img);
 
-
-  
 
   gtk_clipboard_set_text(cb,data,-1);
   
@@ -241,52 +205,52 @@ void status_icon_notification_closed_cb (NotifyNotification *notification,
   printf("popup closed\n");
 }
 
-void
-callback (GFileMonitor *mon, GFile *first, GFile *second, GFileMonitorEvent event, gpointer udata)
+void callback (GFileMonitor *mon, GFile *first, GFile *second, GFileMonitorEvent event, gpointer udata)
 {
   if (event == G_FILE_MONITOR_EVENT_CHANGES_DONE_HINT)
     {
 
- notify_notification_close(example,NULL);
+      //Need this to make the popup displayed for sure
+      notify_notification_close(example,NULL);
 
 
-  printf ("file changed %s\n",g_file_get_path(first));
-
-  //  printf ("event: %d\n",event);
-
-  sender=g_file_get_basename(first);
-  fp=fopen(g_file_get_path(first),"r");
-  if (!(fp==(FILE*)NULL))
-    {
-      fseek(fp,0,SEEK_END);
-      file_size=ftell(fp);
-      printf("filesize: %d\n",file_size);
-      fseek(fp,0,SEEK_SET);
-      data=malloc(sizeof(char)*file_size+1);
-      data[file_size]=0;
-      fread(data,1,file_size,fp);
-      fclose(fp);
+      printf ("file changed %s\n",g_file_get_path(first));
       
-      if (data[file_size-1]=='\n')
+      //  printf ("event: %d\n",event);
+
+      sender=g_file_get_basename(first);
+      fp=fopen(g_file_get_path(first),"r");
+      if (!(fp==(FILE*)NULL))
 	{
-	  data[file_size-1]=0;
-	}
+	  fseek(fp,0,SEEK_END);
+	  file_size=ftell(fp);
+	  printf("filesize: %d\n",file_size);
+	  fseek(fp,0,SEEK_SET);
+	  data=malloc(sizeof(char)*file_size+1);
+	  data[file_size]=0;
+	  fread(data,1,file_size,fp);
+	  fclose(fp);
       
-      //   sprintf(info," %d",counter);
-      GError *error = NULL;
-      memcpy(preview,data,256);
-      preview[255]=0;
-      notify_notification_update(example,sender,preview,NULL);
-      notify_notification_show(example,&error);
+	  if (data[file_size-1]=='\n')
+	    {
+	      data[file_size-1]=0;
+	    }
+      
+	  //   sprintf(info," %d",counter);
+	  GError *error = NULL;
+	  memcpy(preview,data,256);
+	  preview[255]=0;
+	  notify_notification_update(example,sender,preview,NULL);
+	  notify_notification_show(example,&error);
 
-      int retval=ca_context_play(context, 0, CA_PROP_MEDIA_FILENAME, "/usr/share/sounds/freedesktop/stereo/complete.oga", NULL);
-      printf ("soundplay %d:%s\n",retval,ca_strerror(retval));
+	  int retval=ca_context_play(context, 0, CA_PROP_MEDIA_FILENAME, "/usr/share/sounds/freedesktop/stereo/complete.oga", NULL);
+	  printf ("soundplay %d:%s\n",retval,ca_strerror(retval));
 
 
-    } else
-    {
-      printf("Unable to open file %s\n",filename);
-    }
+	} else
+	{
+	  printf("Unable to open file %s\n",filename);
+	}
  
     }
 
@@ -313,15 +277,6 @@ void global_text_receive (GtkClipboard *clipboard, const gchar *text, gpointer d
 } 
 
 
-int ssh_socket_present()
-{
-
-  char socketfile[512];
-  snprintf(socketfile,512,"%s/.sshdrop/ssh_socket",getenv("HOME"));
-  printf ("Socket fn:%s\n",socketfile);
-  return access(socketfile,F_OK);
-
-}
 
 void tray_icon_on_click(GtkStatusIcon *status_icon, gpointer user_data)
 {
@@ -370,7 +325,7 @@ int main(int argc, char **argv)
     // initialize gtk
     gtk_init(&argc,&argv);
     g_type_init(); 
-    char name[40] = "SSHDrop";
+    char* name = "SSHDrop";
     
     // initiate notify
     notify_init(name);
@@ -379,20 +334,20 @@ int main(int argc, char **argv)
    
     example = notify_notification_new(name,"",NULL);
     
-      
+    
     addIcon(example);
     notify_notification_add_action(example,"copy","Copy to Clipboard",(NotifyActionCallback)notif_libnotify_callback_open,name,NULL);
     notify_notification_add_action(example,"copy","QR-Code",(NotifyActionCallback)notif_libnotify_callback_qrcode,name,NULL);
 
 
     g_signal_connect(example,"closed",G_CALLBACK (status_icon_notification_closed_cb),NULL);
-
+    
 
     // set the timeout of the notification to the default value
     notify_notification_set_timeout(example,NOTIFY_EXPIRES_DEFAULT);
     
     // set the category so as to tell what kind it is
-    char category[30] = "Testing Notifications";
+    char* category = "Testing Notifications";
     notify_notification_set_category(example,category);
     
     // set the urgency level of the notification
@@ -414,14 +369,6 @@ int main(int argc, char **argv)
     
    
 
-    //      img=gtk_image_new_from_file("aktion.png");
-    //   img=gtk_image_new_from_pixbuf(bild);
-    //  printf ("%d\n",img);
-
-    //    GtkWidget *pixmapwid;
-    //    pixmapwid = gtk_pixmap_new (bild, null);
-
- 
     init_canberra();
     
     
