@@ -29,7 +29,7 @@ SSHDROP_SENDER=${USER}@$(hostname)
 # A directory of the most recent clipboard broadcasts per sender.
 #SSHDROP_CLIPBOARD_OUTPUT_DIR=""
 
-# Calls whenever a clipboard paste was received.
+# Called whenever a clipboard paste was received.
 sshdrop_hook_clipboard () {
   return 0
 }
